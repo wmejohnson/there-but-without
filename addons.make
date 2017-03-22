@@ -1,0 +1,4 @@
+ofxGui
+ofxOsc
+ofxVectorField
+ofxXmlSettings
