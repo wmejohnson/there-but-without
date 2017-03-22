@@ -11,7 +11,6 @@ void ofApp::setup(){
     video.setVolume(0.0);
     video.play();
 
-    
     //GUI
     gui.setup();
     drawGUI = false;
