@@ -2,18 +2,35 @@
 
 //--------------------------------------------------------------
 void ofApp::setup(){
-    ofSetFrameRate(40);
+    ofSetFrameRate(30);
     ofDisableDepthTest();
     ofEnableAlphaBlending();
     
     video.load("videos/2.mp4");
     video.setLoopState(OF_LOOP_NORMAL);
-    video.setVolume(0.0);
-    video.play();
+    video.setVolume(1);
+    
+    record = false;
 
     //GUI
     gui.setup();
-    drawGUI = false;
+    blurGroup.setName("blur");
+    blurGroup.add(iterations.set("iterations", 6, 1, 100));
+    blurGroup.add(distance.set("distance", 11, 2, 100));
+    gui.add(blurGroup);
+    
+    noiseControls.setName("noise");
+    noiseControls.add(noiseMaskSpeed.set("speed", 0.005, 0.001, 0.1));
+    gui.add(noiseControls);
+    
+    videoControls.setName("video");
+    videoControls.add(videoSpeed.set("speed", 0.6, 0.1, 2.0));
+    videoControls.add(videoBrightness.set("brightness", 1.0, 0.0, 1.2));
+    videoControls.add(noiseAmount.set("noiseAmt", 0.0, 0.0, 1.0));
+    videoControls.add(noiseSpeed.set("noiseSpd", 8.0, 0.0, 30.));
+    videoControls.add(flicker.set("flicker", false));
+    gui.add(videoControls);
+    drawGUI = true;
 
     //Shader Setup
     blur.load("shaders/blur");
@@ -36,11 +53,18 @@ void ofApp::setup(){
     finalFbo.begin();
     ofBackground(0);
     finalFbo.end();
+    
+    //State
+    state = 0;
+    
+    //play video
+    video.play();
+
 }
 
 //--------------------------------------------------------------
 void ofApp::update(){
-    video.setSpeed(0.2);
+    video.setSpeed(videoSpeed);
     video.update();
     
     //blur the video
@@ -48,6 +72,8 @@ void ofApp::update(){
     ofClear(255, 255, 255, 0);
     blur.begin();
     blur.setUniform2f("u_resolution", ofGetWidth(), ofGetHeight());
+    blur.setUniform1i("u_interations", iterations);
+    blur.setUniform1i("u_dist", distance);
     video.draw(0, 0, ofGetWidth(), ofGetHeight());
     blur.end();
     blurredFbo.end();
@@ -59,6 +85,7 @@ void ofApp::update(){
     noise.begin();
     noise.setUniform2f("u_resolution", ofGetWidth(), ofGetHeight());
     noise.setUniform1f("u_time", ofGetElapsedTimef());
+    noise.setUniform1f("u_speed", noiseMaskSpeed);
     ofDrawRectangle(0, 0, ofGetWidth(), ofGetHeight());
     noise.end();
     maskFbo.end();
@@ -70,9 +97,15 @@ void ofApp::update(){
     ofBackground(255);
     
     mask.begin();
-
+    
     video.draw(0, 0, ofGetWidth(), ofGetHeight());
+    if(flicker){
+        mask.setUniform1f("u_bright", (videoBrightness-(ofNoise(noiseSpeed*ofGetElapsedTimef()))*noiseAmount)*((int)(ofRandom(1.0)>0.9)));
+    } else {
+        mask.setUniform1f("u_bright", (videoBrightness-(ofNoise(noiseSpeed*ofGetElapsedTimef()))*noiseAmount));
+    }
     mask.setUniformTexture("video", video.getTexture(), 3);
+    mask.setUniform1i("u_white", state);
     mask.setUniformTexture("blurred", blurredFbo.getTexture(), 1);
     mask.setUniformTexture("mask", maskFbo.getTexture(), 2);
 
@@ -84,9 +117,17 @@ void ofApp::update(){
 void ofApp::draw(){
     ofSetWindowTitle(ofToString(ofGetFrameRate()));
 
-    finalFbo.draw(0, 0, ofGetWidth(), ofGetHeight());
-
-    if (drawGUI) gui.draw();
+    maskFbo.draw(0, 0);
+    finalFbo.draw(400, 30, 800, 500);
+    
+    if(ofGetFrameNum() < 300 && record) {
+        //set the length of the recrording
+        //before the gui draw so it doesn't matter
+        //if i have it up or not :)
+        ofSaveFrame();
+    }
+    
+    if(drawGUI) gui.draw();
 }
 
 void ofApp::close(){
@@ -104,6 +145,21 @@ void ofApp::keyPressed(int key){
             break;
         case 'S':
             ofSaveScreen("memory"+ofGetTimestampString()+".png");
+            break;
+        case '1':
+            video.load("videos/1.mp4");
+            break;
+        case '2':
+            video.load("videos/2.mp4");
+            break;
+        case '3':
+            video.load("videos/3.mp4");
+            break;
+        case 'q':
+            state = 0;
+            break;
+        case 'w':
+            state =1;
             break;
         default:
             break;

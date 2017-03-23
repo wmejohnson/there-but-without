@@ -3,6 +3,7 @@
 out vec4 outputColor;
 uniform vec2 u_resolution;
 uniform float u_time;
+uniform float u_speed;
 
 //jacked this noise from https://www.shadertoy.com/view/XsX3zB
 
@@ -100,7 +101,7 @@ void main()
     vec2 st = gl_FragCoord.xy/u_resolution.xy;
     st *= 0.1;
 
-    vec3 p3 = vec3(st, u_time*0.005);
+    vec3 p3 = vec3(st, u_time*u_speed);
     
     float value;
     value = simplex3d_fractal(p3*8.0+8.0);

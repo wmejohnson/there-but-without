@@ -1,4 +1,2 @@
 ofxGui
-ofxOsc
-ofxVectorField
-ofxXmlSettings
+ofxVideoRecorder

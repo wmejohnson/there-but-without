@@ -2,10 +2,13 @@
 
 // this is how we receive the texture
 uniform sampler2DRect tex0;
+
 in vec2 tc;
 
 out vec4 outputColor;
 uniform vec2 u_resolution;
+uniform int u_interations;
+uniform int u_dist;
 
 void main()
 {
@@ -17,8 +20,9 @@ void main()
     vec4 abCol = vec4(texCol.r, texCol2.g, texCol2.b, 1.0);
     
     vec4 blurAvg = vec4(0);
-    int blurDist = 15;
-    int blurIter = 15;
+    int blurDist = u_dist;
+    int blurIter = u_interations;
+    
     for(int i = 1; i < blurIter+1; i++){
         blurAvg += texture(tex0, vec2(tc.x+(blurDist*i), tc.y)) + texture(tex0, vec2(tc.x-(blurDist*i), tc.y)) + texture(tex0, vec2(tc.x, tc.y+(blurDist*i))) + texture(tex0, vec2(tc.x, tc.y-(blurDist*i)))+ texture(tex0, vec2(tc.x-(blurDist*i), tc.y-(blurDist*i)))+ texture(tex0, vec2(tc.x+(blurDist*i), tc.y-(blurDist*i)))+ texture(tex0, vec2(tc.x-(blurDist*i), tc.y+(blurDist*i)))+ texture(tex0, vec2(tc.x+(blurDist*i), tc.y+(blurDist*i)));
     }
