@@ -29,8 +29,10 @@ public:
     int state;
     
     // Video
-    ofVideoPlayer video;
-    bool record;
+    ofVideoPlayer video1;
+    ofVideoPlayer video2;
+    ofVideoPlayer video3;
+    ofParameter<bool> record;
     
     // Shaders
     ofShader blur;
@@ -56,6 +58,7 @@ public:
     bool drawGUI;
     
     // Fbo's
+    ofFbo videoFrame;
     ofFbo blurredFbo;
     ofFbo maskFbo;
     ofFbo finalFbo;

@@ -6,14 +6,22 @@ void ofApp::setup(){
     ofDisableDepthTest();
     ofEnableAlphaBlending();
     
-    video.load("videos/2.mp4");
-    video.setLoopState(OF_LOOP_NORMAL);
-    video.setVolume(1);
+    video1.load("videos/1.mp4");
+    video1.setLoopState(OF_LOOP_NORMAL);
+    video1.setVolume(1);
     
-    record = false;
+    video2.load("videos/2.mp4");
+    video2.setLoopState(OF_LOOP_NORMAL);
+    video2.setVolume(1);
 
+    video3.load("videos/3.mp4");
+    video3.setLoopState(OF_LOOP_NORMAL);
+    video3.setVolume(1);
+    
     //GUI
     gui.setup();
+    gui.add(record.set("record", false));
+    
     blurGroup.setName("blur");
     blurGroup.add(iterations.set("iterations", 6, 1, 100));
     blurGroup.add(distance.set("distance", 11, 2, 100));
@@ -38,9 +46,14 @@ void ofApp::setup(){
     mask.load("shaders/mask");
     
     //Fbo Setup
+    videoFrame.allocate(ofGetWidth(), ofGetHeight(), GL_RGBA);
     blurredFbo.allocate(ofGetWidth(), ofGetHeight(), GL_RGBA);
     maskFbo.allocate(ofGetWidth(), ofGetHeight(), GL_RGBA);
     finalFbo.allocate(ofGetWidth(), ofGetHeight(), GL_RGBA);
+    
+    videoFrame.begin();
+    ofBackground(0);
+    videoFrame.end();
     
     blurredFbo.begin();
     ofBackground(0);
@@ -58,14 +71,25 @@ void ofApp::setup(){
     state = 0;
     
     //play video
-    video.play();
-
+    video1.play();
+    video2.play();
+    video3.play();
 }
 
 //--------------------------------------------------------------
 void ofApp::update(){
-    video.setSpeed(videoSpeed);
-    video.update();
+    video1.setSpeed(videoSpeed);
+    video1.update();
+    video2.setSpeed(videoSpeed);
+    video2.update();
+    video3.setSpeed(videoSpeed);
+    video3.update();
+    
+    videoFrame.begin();
+    video1.draw(0, 0, ofGetWidth(), ofGetHeight()/3);
+    video2.draw(0, ofGetHeight()/3, ofGetWidth(), (ofGetHeight()/3)*2);
+    video3.draw(0, (ofGetHeight()/3)*2, ofGetWidth(), ofGetHeight());
+    videoFrame.end();
     
     //blur the video
     blurredFbo.begin();
@@ -74,7 +98,7 @@ void ofApp::update(){
     blur.setUniform2f("u_resolution", ofGetWidth(), ofGetHeight());
     blur.setUniform1i("u_interations", iterations);
     blur.setUniform1i("u_dist", distance);
-    video.draw(0, 0, ofGetWidth(), ofGetHeight());
+    videoFrame.draw(0, 0);
     blur.end();
     blurredFbo.end();
     
@@ -98,13 +122,13 @@ void ofApp::update(){
     
     mask.begin();
     
-    video.draw(0, 0, ofGetWidth(), ofGetHeight());
+    video1.draw(0, 0, ofGetWidth(), ofGetHeight());
     if(flicker){
         mask.setUniform1f("u_bright", (videoBrightness-(ofNoise(noiseSpeed*ofGetElapsedTimef()))*noiseAmount)*((int)(ofRandom(1.0)>0.9)));
     } else {
         mask.setUniform1f("u_bright", (videoBrightness-(ofNoise(noiseSpeed*ofGetElapsedTimef()))*noiseAmount));
     }
-    mask.setUniformTexture("video", video.getTexture(), 3);
+    mask.setUniformTexture("video", videoFrame.getTexture(), 3);
     mask.setUniform1i("u_white", state);
     mask.setUniformTexture("blurred", blurredFbo.getTexture(), 1);
     mask.setUniformTexture("mask", maskFbo.getTexture(), 2);
@@ -117,8 +141,7 @@ void ofApp::update(){
 void ofApp::draw(){
     ofSetWindowTitle(ofToString(ofGetFrameRate()));
 
-    maskFbo.draw(0, 0);
-    finalFbo.draw(400, 30, 800, 500);
+    finalFbo.draw(0 , 0, ofGetWidth(), ofGetHeight());
     
     if(ofGetFrameNum() < 300 && record) {
         //set the length of the recrording
@@ -131,7 +154,7 @@ void ofApp::draw(){
 }
 
 void ofApp::close(){
-
+    //de allocate some memoryyy (do i need to do this in c++?)
 }
 
 //--------------------------------------------------------------
@@ -139,21 +162,13 @@ void ofApp::keyPressed(int key){
     switch (key) {
         case 'f':
             ofToggleFullscreen();
+            windowResized(ofGetWidth(), ofGetHeight());
             break;
         case 'g':
             drawGUI = !drawGUI;
             break;
         case 'S':
             ofSaveScreen("memory"+ofGetTimestampString()+".png");
-            break;
-        case '1':
-            video.load("videos/1.mp4");
-            break;
-        case '2':
-            video.load("videos/2.mp4");
-            break;
-        case '3':
-            video.load("videos/3.mp4");
             break;
         case 'q':
             state = 0;
